@@ -1,0 +1,8 @@
+# Unity-specific ignores
+Library/
+Logs/
+Temp/
+UserSettings/
+*.csproj
+*.sln
+.vscode/
