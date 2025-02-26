@@ -31,10 +31,6 @@ public class PlayerCombat : MonoBehaviour
     public TMP_Text p1HealthDisplay;
     public TMP_Text p2HealthDisplay;
 
-    [Header("Got Hit Trails")]
-    public TrailRenderer p1GotHitTrail;
-    public TrailRenderer p2GotHitTrail;
-
     [Header("Particles")]
     public GameObject shieldParticles;
     public ParticleSystem p1DamageParticles;
@@ -104,8 +100,6 @@ public class PlayerCombat : MonoBehaviour
 
         p1Fist = p1FistAnimator.gameObject;
         p2Fist = p2FistAnimator.gameObject;
-        p1GotHitTrail.emitting = false;
-        p2GotHitTrail.emitting = false;
 
         p1DamageParticles.Stop();
         p2DamageParticles.Stop();
@@ -306,7 +300,6 @@ public class PlayerCombat : MonoBehaviour
             p2Fist.GetComponent<Collider2D>().isTrigger = true;
         }
         #endregion
-
     }
     //Sends direction of attack to p1/p2ExecuteAttack() function
     void HandleAttack(float direction, bool isPlayerOne)
@@ -367,7 +360,6 @@ public class PlayerCombat : MonoBehaviour
 
         StartCoroutine(ResetAttackState(true, cooldown - 0.25f));
     }
-
     void p2ExecuteAttack(string animationTrigger, float cooldown, float force)
     {
         p2Attacking = true;
