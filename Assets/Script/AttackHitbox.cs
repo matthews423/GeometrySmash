@@ -28,12 +28,7 @@ public class AttackHitbox : MonoBehaviour
     {
         if (!hitbox.enabled) return; // Ignore if hitbox is disabled
 
-        if (other.CompareTag("Fist"))
-        {
-            Debug.Log("we hitting the fist fr");
-        }
-
-        if (other.CompareTag("Fist") || other.CompareTag("Player")) // Ignore fists
+        if (other.CompareTag("Player")) // Ignore fists
         {
             if (isPlayerOne)
             {

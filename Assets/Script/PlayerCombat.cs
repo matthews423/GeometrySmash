@@ -2,17 +2,18 @@ using System.Collections;
 using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 
 public class PlayerCombat : MonoBehaviour
 {
     #region Variables
     [Header("For Both Players")]
-    public float speed = 20f;
-    public float attackForce = -45f;
     public float knockbackForce = 140f;
     public double amountOfHealth = 20;
     public float stunDuration = 1.5f;
     public float whenBlockedStunDuration = 2f;
+    public float ultDamageMultiplier = 3f;
+    public float ultKnockbackMultiplier = 2f;
 
     [Header("Rigidbody2Ds")]
     public Rigidbody2D player1;
@@ -35,6 +36,8 @@ public class PlayerCombat : MonoBehaviour
     public GameObject shieldParticles;
     public ParticleSystem p1DamageParticles;
     public ParticleSystem p2DamageParticles;
+    public ParticleSystem p1UltDamageParticles;
+    public ParticleSystem p2UltDamageParticles;
 
     [Header("Check if...")]
     [HideInInspector] public bool p1Stunned = false;
@@ -67,6 +70,8 @@ public class PlayerCombat : MonoBehaviour
     private bool p2AttackPressed;
     private bool p1BlockPressed;
     private bool p2BlockPressed;
+    private bool p1UltPressed;
+    private bool p2UltPressed;
 
     [Header("Attack Bools")]
     private bool p1AttackHigh;
@@ -88,6 +93,21 @@ public class PlayerCombat : MonoBehaviour
     private float p1CooldownDamage;
     private float p2CooldownDamage;
 
+    [Header("Ultimate Move")]
+    public Slider p1UltBar;
+    public Slider p2UltBar;
+    public int punchIncrement = 10;
+    public int blockIncrement = 20;
+    public int damagedIncrement = 5;
+    public GameObject p1Aura;
+    public GameObject p2Aura;
+    public GameObject pressQ;
+    public GameObject pressK;
+    [HideInInspector] public bool p1UltActivated;
+    [HideInInspector] public bool p2UltActivated;
+    private bool p1PlayUltAnimations = false;
+    private bool p2PlayUltAnimations = false;
+
     [Header("Scripts")]
     private AttackHitbox attackHitbox;
 
@@ -105,6 +125,9 @@ public class PlayerCombat : MonoBehaviour
         p2DamageParticles.Stop();
 
         attackHitbox = FindObjectOfType<AttackHitbox>();
+
+        p1UltBar.value = 0f;
+        p2UltBar.value = 0f;
     }
 
     void Update()
@@ -120,6 +143,9 @@ public class PlayerCombat : MonoBehaviour
         p2AttackPressed = Input.GetKey(KeyCode.M);
         p1BlockPressed = Input.GetKey(KeyCode.C);
         p2BlockPressed = Input.GetKey(KeyCode.Comma);
+
+        p1UltPressed = Input.GetKey(KeyCode.Q);
+        p2UltPressed = Input.GetKey(KeyCode.K);
         #endregion
 
         #region DecrementCooldowns
@@ -156,6 +182,52 @@ public class PlayerCombat : MonoBehaviour
         //Health display
         p1HealthDisplay.SetText("Health " + p1Life + "/" + amountOfHealth);
         p2HealthDisplay.SetText("Health " + p2Life + "/" + amountOfHealth);
+        #endregion
+
+        #region UltimateMove
+        if (p1UltBar.value == 100)
+        {
+            pressQ.SetActive(true);
+            if (p1UltPressed)
+            {
+                p1UltBar.value = 0;
+                p1UltActivated = true;
+            }
+        }
+        else
+        {
+            pressQ.SetActive(false);
+        }
+        if (p2UltBar.value == 100)
+        {
+            pressK.SetActive(true);
+            if (p2UltPressed)
+            {
+                p2UltBar.value = 0;
+                p2UltActivated = true;
+            }
+        }
+        else
+        {
+            pressK.SetActive(false);
+        }
+
+        if (p1UltActivated)
+        {
+            p1Aura.SetActive(true);
+        }
+        else
+        {
+            p1Aura.SetActive(false);
+        }
+        if (p2UltActivated)
+        {
+            p2Aura.SetActive(true);
+        }
+        else
+        {
+            p2Aura.SetActive(false);
+        }
         #endregion
 
         //Everything players can do if not stunned. Where HandleAttack is called.
@@ -301,6 +373,7 @@ public class PlayerCombat : MonoBehaviour
         }
         #endregion
     }
+
     //Sends direction of attack to p1/p2ExecuteAttack() function
     void HandleAttack(float direction, bool isPlayerOne)
     {
@@ -357,27 +430,55 @@ public class PlayerCombat : MonoBehaviour
         p1CanAttack.SetActive(false);
         p1Cooldown = cooldown;
         p1CooldownDamage = cooldown;
-
+        if (p1UltActivated)
+        {
+            p1CooldownDamage *= ultDamageMultiplier;
+            p1PlayUltAnimations = true;
+            StartCoroutine(removeAura(true, .8f));
+        }
         StartCoroutine(ResetAttackState(true, cooldown - 0.25f));
     }
     void p2ExecuteAttack(string animationTrigger, float cooldown, float force)
     {
         p2Attacking = true;
+        p1FistAnimator.ResetTrigger("BHighP");
+        p1FistAnimator.ResetTrigger("BMidP");
+        p1FistAnimator.ResetTrigger("BLowP");
         p2FistAnimator.SetTrigger(animationTrigger);
         p2CanAttack.SetActive(false);
         p2Cooldown = cooldown;
         p2CooldownDamage = cooldown;
 
+        if (p2UltActivated)
+        {
+            p2CooldownDamage *= ultDamageMultiplier;
+            p2PlayUltAnimations = true;
+            StartCoroutine(removeAura(false, .8f));
+        }
         StartCoroutine(ResetAttackState(false, cooldown - 0.25f));
-
     }
 
     public void p1CheckHit()
     {
         if (p1LandsHit())
         {
-            cameraAnimator.SetTrigger("shake");
-            p2DamageParticles.Play();
+            p1UltBar.value += punchIncrement;
+            p2UltBar.value += damagedIncrement;
+
+            if (!p1PlayUltAnimations)
+            {
+                cameraAnimator.SetTrigger("shake");
+                p2DamageParticles.Play();
+            }
+            else
+            {
+                cameraAnimator.SetTrigger("ultShake");
+                p2UltDamageParticles.Play();
+                p1UltActivated = false;
+                p1PlayUltAnimations = false;
+                p1UltBar.value = 0;
+            }
+
 
             p1AttackHigh = p1AttackMid = p1AttackLow = false;
             p2Life -= p1CooldownDamage; // Damage scales with cooldown
@@ -394,8 +495,22 @@ public class PlayerCombat : MonoBehaviour
     {
         if (p2LandsHit())
         {
-            cameraAnimator.SetTrigger("shake");
-            p1DamageParticles.Play();
+            p2UltBar.value += punchIncrement;
+            p1UltBar.value += damagedIncrement;
+
+            if (!p2PlayUltAnimations)
+            {
+                cameraAnimator.SetTrigger("shake");
+                p1DamageParticles.Play();                
+            }
+            else
+            {
+                cameraAnimator.SetTrigger("ultShake");
+                p1UltDamageParticles.Play();
+                p2UltActivated = false;
+                p2PlayUltAnimations = false;
+                p2UltBar.value = 0;
+            }
 
             p2AttackHigh = p2AttackMid = p2AttackLow = false;
             p1Life -= p2CooldownDamage; // Damage scales with cooldown
@@ -487,6 +602,7 @@ public class PlayerCombat : MonoBehaviour
         if (!noBlock)
         {
             SpawnParticles(shieldParticles, p2Fist.transform.position, 2f);
+            p2UltBar.value += blockIncrement;
             StartCoroutine(StunPlayer(true, whenBlockedStunDuration));
         }
 
@@ -512,6 +628,7 @@ public class PlayerCombat : MonoBehaviour
         if (!noBlock)
         {
             SpawnParticles(shieldParticles, p1Fist.transform.position, 2f);
+            p1UltBar.value += blockIncrement;
             StartCoroutine(StunPlayer(false, whenBlockedStunDuration));
         }
 
@@ -526,8 +643,23 @@ public class PlayerCombat : MonoBehaviour
     }
 
     #region Coroutines
-    //Stuns player1/player2 (true/false) for a certain amount of seconds and turns them gray to indicate
-    IEnumerator StunPlayer(bool isPlayerOne, float stunTime)
+
+    IEnumerator removeAura(bool isPlayerOne, float duration)
+    {
+        yield return new WaitForSeconds(duration);
+
+        if (isPlayerOne)
+        {
+            p1UltActivated = false;
+        }
+        else
+        {
+            p2UltActivated = false;
+        }
+    }
+
+        //Stuns player1/player2 (true/false) for a certain amount of seconds and turns them gray to indicate
+        IEnumerator StunPlayer(bool isPlayerOne, float stunTime)
     {
         if (isPlayerOne)
         {

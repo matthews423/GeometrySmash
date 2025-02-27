@@ -5,6 +5,7 @@ public class PlayerOneMovement : MonoBehaviour
 {
     [Header("Speed")]
     public float speed = 20f;
+    public float ultSpeed = 23f;
     public float dashSpeedMultiplier = 3f;
     public float speedWhileStunned = 2f;
 
@@ -41,7 +42,14 @@ public class PlayerOneMovement : MonoBehaviour
 
         if (!isDashing && !playerCombat.p1IsKnockedBack)
         {
-            rb.velocity = new Vector2(moveInput * speed, rb.velocity.y);
+            if (playerCombat.p1UltActivated)
+            {
+                rb.velocity = new Vector2(moveInput * ultSpeed, rb.velocity.y);
+            }
+            else
+            {
+                rb.velocity = new Vector2(moveInput * speed, rb.velocity.y);
+            }
         }
 
         if (Time.time >= nextDashTime && dash && moveInput != 0 && !playerCombat.p1Stunned)
