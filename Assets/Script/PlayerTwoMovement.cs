@@ -35,6 +35,11 @@ public class PlayerTwoMovement : MonoBehaviour
         moveInput = Input.GetAxisRaw("P2_Horizontal");
         bool dash = Input.GetButtonDown("P2_Dash");
 
+        if (playerCombat.pausedGame)
+        {
+            return;
+        }
+
         if (playerCombat.p2Stunned && speed != speedWhileStunned)
         {
             StartCoroutine(stunSlowDown(speedWhileStunned, playerCombat.stunDuration));

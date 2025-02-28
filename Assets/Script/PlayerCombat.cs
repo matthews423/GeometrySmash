@@ -31,6 +31,8 @@ public class PlayerCombat : MonoBehaviour
     public GameObject p2CanAttack;
     public TMP_Text p1HealthDisplay;
     public TMP_Text p2HealthDisplay;
+    public GameObject pauseMenu;
+    [HideInInspector] public bool pausedGame = false;
 
     [Header("Particles")]
     public GameObject shieldParticles;
@@ -64,6 +66,7 @@ public class PlayerCombat : MonoBehaviour
     private float p2DirInput;
     private float p1HorizontalInput;
     private float p2HorizontalInput;
+    private bool escPressed;
 
     [Header("Combat Inputs")]
     private bool p1AttackPressed;
@@ -128,6 +131,8 @@ public class PlayerCombat : MonoBehaviour
 
         p1UltBar.value = 0f;
         p2UltBar.value = 0f;
+
+        pauseMenu.SetActive(false);
     }
 
     void Update()
@@ -146,35 +151,56 @@ public class PlayerCombat : MonoBehaviour
 
         p1UltPressed = Input.GetKey(KeyCode.Q);
         p2UltPressed = Input.GetKey(KeyCode.K);
+
+        escPressed = Input.GetKeyDown(KeyCode.Escape);
+        #endregion
+
+        #region PauseGame
+        if (escPressed)
+        {
+            pausedGame = !pausedGame;
+        }
+
+        if (pausedGame)
+        {
+            pauseMenu.SetActive(true);
+        }
+        else
+        {
+            pauseMenu.SetActive(false);
+        }
         #endregion
 
         #region DecrementCooldowns
         //Makes both player's attack cooldowns decrease with respect to time, while
         //making sure they do not drop below zero
-        if (p1Cooldown > 0f)
+        if (!pausedGame)
         {
-            p1Cooldown -= Time.deltaTime;
-            //Makes sure the cooldown symbol at least appears so even if you spam you still see it
-            if (p1Cooldown < 0.1f)
+            if (p1Cooldown > 0f)
             {
-                p1CanAttack.SetActive(true);
+                p1Cooldown -= Time.deltaTime;
+                //Makes sure the cooldown symbol at least appears so even if you spam you still see it
+                if (p1Cooldown < 0.1f)
+                {
+                    p1CanAttack.SetActive(true);
+                }
             }
-        }
-        else
-        {
-            p1Cooldown = 0;
-        }
-        if (p2Cooldown > 0f)
-        {
-            p2Cooldown -= Time.deltaTime;
-            if (p2Cooldown < 0.1f)
+            else
             {
-                p2CanAttack.SetActive(true);
+                p1Cooldown = 0;
             }
-        }
-        else
-        {
-            p2Cooldown = 0;
+            if (p2Cooldown > 0f)
+            {
+                p2Cooldown -= Time.deltaTime;
+                if (p2Cooldown < 0.1f)
+                {
+                    p2CanAttack.SetActive(true);
+                }
+            }
+            else
+            {
+                p2Cooldown = 0;
+            }
         }
         #endregion
 
@@ -188,7 +214,7 @@ public class PlayerCombat : MonoBehaviour
         if (p1UltBar.value == 100)
         {
             pressQ.SetActive(true);
-            if (p1UltPressed)
+            if (p1UltPressed && !pausedGame)
             {
                 p1UltBar.value = 0;
                 p1UltActivated = true;
@@ -201,7 +227,7 @@ public class PlayerCombat : MonoBehaviour
         if (p2UltBar.value == 100)
         {
             pressK.SetActive(true);
-            if (p2UltPressed)
+            if (p2UltPressed && !pausedGame)
             {
                 p2UltBar.value = 0;
                 p2UltActivated = true;
@@ -232,29 +258,32 @@ public class PlayerCombat : MonoBehaviour
 
         //Everything players can do if not stunned. Where HandleAttack is called.
         //Doing it this way just in case I want to add something that you can't do while stunned
-        if (!p1Stunned)
+        if (!pausedGame)
         {
-            //If cooldown's over and you press the attack button, attack
-            if (p1Cooldown == 0 && p1AttackPressed)
+            if (!p1Stunned)
             {
-                HandleAttack(p1DirInput, true);
-            }
-        } 
-        if (!p2Stunned)
-        {
-            if (p2Cooldown == 0 && p2AttackPressed)
+                //If cooldown's over and you press the attack button, attack
+                if (p1Cooldown == 0 && p1AttackPressed)
+                {
+                    HandleAttack(p1DirInput, true);
+                }
+            } 
+            if (!p2Stunned)
             {
-                HandleAttack(p2DirInput, false);
+                if (p2Cooldown == 0 && p2AttackPressed)
+                {
+                    HandleAttack(p2DirInput, false);
+                }
             }
-        }
 
-        if (p1BlockPressed && p1Cooldown == 0)
-        {
-            HandleBlock(p1DirInput, true);
-        }
-        if (p2BlockPressed && p2Cooldown == 0)
-        {
-            HandleBlock(p2DirInput, false);
+            if (p1BlockPressed && p1Cooldown == 0)
+            {
+                HandleBlock(p1DirInput, true);
+            }
+            if (p2BlockPressed && p2Cooldown == 0)
+            {
+                HandleBlock(p2DirInput, false);
+            }
         }
 
         #region FistAndBlockAnimations
@@ -283,19 +312,22 @@ public class PlayerCombat : MonoBehaviour
 
             else //Only change fist position if not blocking
             {
-                if (p1DirInput > 0)
+                if (!pausedGame)
                 {
-                    p1FistAnimator.SetBool("isBlueHandUp", true);
-                    p1FistAnimator.SetBool("isBlueHandDown", false);
-                }
-                else if (p1DirInput < 0)
-                {
-                    p1FistAnimator.SetBool("isBlueHandDown", true);
-                    p1FistAnimator.SetBool("isBlueHandUp", false);
-                }
-                else
-                {
-                    p1FistAnimator.Play("BlueIdle", 0, 0f);
+                    if (p1DirInput > 0)
+                    {
+                        p1FistAnimator.SetBool("isBlueHandUp", true);
+                        p1FistAnimator.SetBool("isBlueHandDown", false);
+                    }
+                    else if (p1DirInput < 0)
+                    {
+                        p1FistAnimator.SetBool("isBlueHandDown", true);
+                        p1FistAnimator.SetBool("isBlueHandUp", false);
+                    }
+                    else
+                    {
+                        p1FistAnimator.Play("BlueIdle", 0, 0f);
+                    }
                 }
             }
         }
@@ -323,19 +355,22 @@ public class PlayerCombat : MonoBehaviour
             }
             else
             {
-                if (p2DirInput > 0)
+                if (!pausedGame)
                 {
-                    p2FistAnimator.SetBool("isRedHandUp", true);
-                    p2FistAnimator.SetBool("isRedHandDown", false);
-                }
-                else if (p2DirInput < 0)
-                {
-                    p2FistAnimator.SetBool("isRedHandDown", true);
-                    p2FistAnimator.SetBool("isRedHandUp", false);
-                }
-                else
-                {
-                    p2FistAnimator.Play("RedIdle", 0, 0f);
+                    if (p2DirInput > 0)
+                    {
+                        p2FistAnimator.SetBool("isRedHandUp", true);
+                        p2FistAnimator.SetBool("isRedHandDown", false);
+                    }
+                    else if (p2DirInput < 0)
+                    {
+                        p2FistAnimator.SetBool("isRedHandDown", true);
+                        p2FistAnimator.SetBool("isRedHandUp", false);
+                    }
+                    else
+                    {
+                        p2FistAnimator.Play("RedIdle", 0, 0f);
+                    }
                 }
             }
         }
@@ -374,6 +409,7 @@ public class PlayerCombat : MonoBehaviour
         #endregion
     }
 
+    #region AttackFunctions
     //Sends direction of attack to p1/p2ExecuteAttack() function
     void HandleAttack(float direction, bool isPlayerOne)
     {
@@ -422,6 +458,11 @@ public class PlayerCombat : MonoBehaviour
     //and is knocked back
     void p1ExecuteAttack(string animationTrigger, float cooldown, float force)
     {
+        if (pausedGame)
+        {
+            return;
+        }
+
         p1Attacking = true;
         p1FistAnimator.ResetTrigger("BHighP");
         p1FistAnimator.ResetTrigger("BMidP");
@@ -440,6 +481,11 @@ public class PlayerCombat : MonoBehaviour
     }
     void p2ExecuteAttack(string animationTrigger, float cooldown, float force)
     {
+        if (pausedGame)
+        {
+            return;
+        }
+
         p2Attacking = true;
         p1FistAnimator.ResetTrigger("BHighP");
         p1FistAnimator.ResetTrigger("BMidP");
@@ -524,64 +570,6 @@ public class PlayerCombat : MonoBehaviour
         }
     }
 
-    void HandleBlock(float direction, bool isPlayerOne)
-    {
-        if (isPlayerOne)
-        {
-            p1Fist.GetComponent<Collider2D>().isTrigger = false;
-
-            p1BlockHigh = false;
-            p1BlockMid = false;
-            p1BlockLow = false;
-
-            if (direction > 0)
-            {
-                p1BlockHigh = true;
-            }            
-            else if (direction < 0)
-            {
-                p1BlockLow = true;
-            }            
-            else
-            {
-                p1BlockMid = true;
-            }
-        }
-        else
-        {
-            p2Fist.GetComponent<Collider2D>().isTrigger = false;
-
-            p2BlockHigh = false; 
-            p2BlockMid = false; 
-            p2BlockLow = false;
-
-            if (direction > 0)
-            {
-                p2BlockHigh = true;
-            }
-            else if (direction < 0)
-            {
-                p2BlockLow = true;
-            }
-            else
-            {
-                p2BlockMid = true;
-            }
-        }
-    }
-
-    void p1ExecuteBlock(string animationTrigger)
-    {
-        p1FistAnimator.SetTrigger(animationTrigger);
-    }    
-    void p2ExecuteBlock(string animationTrigger)
-    {
-        p2FistAnimator.SetTrigger(animationTrigger);
-    }
-
-    //temporary returning true; two things it needs to check for 
-    //1. collision with the players hitbox (not the fist)
-    //     a. also make sure the hitbox only hits accurately to the animation
     public bool p1LandsHit()
     {
         bool noBlock = false; 
@@ -634,6 +622,65 @@ public class PlayerCombat : MonoBehaviour
 
         return noBlock;
     }
+    #endregion
+
+    #region BlockFunctions
+    void HandleBlock(float direction, bool isPlayerOne)
+    {
+        if (isPlayerOne)
+        {
+            p1Fist.GetComponent<Collider2D>().isTrigger = false;
+
+            p1BlockHigh = false;
+            p1BlockMid = false;
+            p1BlockLow = false;
+
+            if (direction > 0)
+            {
+                p1BlockHigh = true;
+            }            
+            else if (direction < 0)
+            {
+                p1BlockLow = true;
+            }            
+            else
+            {
+                p1BlockMid = true;
+            }
+        }
+        else
+        {
+            p2Fist.GetComponent<Collider2D>().isTrigger = false;
+
+            p2BlockHigh = false; 
+            p2BlockMid = false; 
+            p2BlockLow = false;
+
+            if (direction > 0)
+            {
+                p2BlockHigh = true;
+            }
+            else if (direction < 0)
+            {
+                p2BlockLow = true;
+            }
+            else
+            {
+                p2BlockMid = true;
+            }
+        }
+    }
+/*
+    void p1ExecuteBlock(string animationTrigger)
+    {
+        p1FistAnimator.SetTrigger(animationTrigger);
+    }    
+    void p2ExecuteBlock(string animationTrigger)
+    {
+        p2FistAnimator.SetTrigger(animationTrigger);
+    }
+*/
+    #endregion
 
     void SpawnParticles(GameObject particles, Vector3 position, float duration)
     {

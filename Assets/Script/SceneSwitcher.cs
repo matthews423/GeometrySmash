@@ -14,14 +14,21 @@ public class SceneSwitcher : MonoBehaviour
         SceneManager.LoadScene("menu");
     }
 
-    public static void GoToVictoryScene1() {
+    public static void GoToVictoryScene1() 
+    {
         SceneManager.LoadScene("victory1");
     }
 
-    public static void GoToVictoryScene2() {
+    public static void GoToVictoryScene2() 
+    {
         SceneManager.LoadScene("victory2");
     }
     
+    public void QuitGame()
+    {
+        Application.Quit();
+    }
+
     // Start is called before the first frame update
     void Start()
     {
